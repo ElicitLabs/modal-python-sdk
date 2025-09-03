@@ -1,9 +1,9 @@
-# Elicit Labs Python API library
+# Modal Python API library
 
 <!-- prettier-ignore -->
-[![PyPI version](https://img.shields.io/pypi/v/elicit_labs.svg?label=pypi%20(stable))](https://pypi.org/project/elicit_labs/)
+[![PyPI version](https://img.shields.io/pypi/v/elicit.svg?label=pypi%20(stable))](https://pypi.org/project/elicit/)
 
-The Elicit Labs Python library provides convenient access to the Elicit Labs REST API from any Python 3.8+
+The Modal Python library provides convenient access to the Modal REST API from any Python 3.8+
 application. The library includes type definitions for all request params and response fields,
 and offers both synchronous and asynchronous clients powered by [httpx](https://github.com/encode/httpx).
 
@@ -11,17 +11,17 @@ It is generated with [Stainless](https://www.stainless.com/).
 
 ## Documentation
 
-The full API of this library can be found in [api.md](api.md).
+The REST API documentation can be found on [elicitlabs.ai](https://elicitlabs.ai/docs). The full API of this library can be found in [api.md](api.md).
 
 ## Installation
 
 ```sh
-# install from this staging repo
-pip install git+ssh://git@github.com/stainless-sdks/elicit-labs-python.git
+# install from the production repo
+pip install git+ssh://git@github.com/ElicitLabs/modal-python-sdk.git
 ```
 
 > [!NOTE]
-> Once this package is [published to PyPI](https://www.stainless.com/docs/guides/publish), this will become: `pip install elicit_labs`
+> Once this package is [published to PyPI](https://www.stainless.com/docs/guides/publish), this will become: `pip install elicit`
 
 ## Usage
 
@@ -29,9 +29,9 @@ The full API of this library can be found in [api.md](api.md).
 
 ```python
 import os
-from elicit_labs import ElicitLabs
+from elicit import Modal
 
-client = ElicitLabs(
+client = Modal(
     api_key=os.environ.get("ELICIT_LABS_API_KEY"),  # This is the default and can be omitted
 )
 
@@ -55,14 +55,14 @@ so that your API Key is not stored in source control.
 
 ## Async usage
 
-Simply import `AsyncElicitLabs` instead of `ElicitLabs` and use `await` with each API call:
+Simply import `AsyncModal` instead of `Modal` and use `await` with each API call:
 
 ```python
 import os
 import asyncio
-from elicit_labs import AsyncElicitLabs
+from elicit import AsyncModal
 
-client = AsyncElicitLabs(
+client = AsyncModal(
     api_key=os.environ.get("ELICIT_LABS_API_KEY"),  # This is the default and can be omitted
 )
 
@@ -93,20 +93,20 @@ By default, the async client uses `httpx` for HTTP requests. However, for improv
 You can enable this by installing `aiohttp`:
 
 ```sh
-# install from this staging repo
-pip install 'elicit_labs[aiohttp] @ git+ssh://git@github.com/stainless-sdks/elicit-labs-python.git'
+# install from the production repo
+pip install 'elicit[aiohttp] @ git+ssh://git@github.com/ElicitLabs/modal-python-sdk.git'
 ```
 
 Then you can enable it by instantiating the client with `http_client=DefaultAioHttpClient()`:
 
 ```python
 import asyncio
-from elicit_labs import DefaultAioHttpClient
-from elicit_labs import AsyncElicitLabs
+from elicit import DefaultAioHttpClient
+from elicit import AsyncModal
 
 
 async def main() -> None:
-    async with AsyncElicitLabs(
+    async with AsyncModal(
         api_key="My API Key",
         http_client=DefaultAioHttpClient(),
     ) as client:
@@ -135,41 +135,20 @@ Nested request parameters are [TypedDicts](https://docs.python.org/3/library/typ
 
 Typed requests and responses provide autocomplete and documentation within your editor. If you would like to see type errors in VS Code to help catch bugs earlier, set `python.analysis.typeCheckingMode` to `basic`.
 
-## Nested params
-
-Nested parameters are dictionaries, typed using `TypedDict`, for example:
-
-```python
-from elicit_labs import ElicitLabs
-
-client = ElicitLabs()
-
-response = client.modal.initialize(
-    app_context={
-        "app_name": "Mail",
-        "app_type": "email_client",
-        "app_version": "2024.1",
-    },
-    session_id="modal_session_123",
-    user_id="123e4567-e89b-12d3-a456-426614174000",
-)
-print(response.app_context)
-```
-
 ## Handling errors
 
-When the library is unable to connect to the API (for example, due to network connection problems or a timeout), a subclass of `elicit_labs.APIConnectionError` is raised.
+When the library is unable to connect to the API (for example, due to network connection problems or a timeout), a subclass of `elicit.APIConnectionError` is raised.
 
 When the API returns a non-success status code (that is, 4xx or 5xx
-response), a subclass of `elicit_labs.APIStatusError` is raised, containing `status_code` and `response` properties.
+response), a subclass of `elicit.APIStatusError` is raised, containing `status_code` and `response` properties.
 
-All errors inherit from `elicit_labs.APIError`.
+All errors inherit from `elicit.APIError`.
 
 ```python
-import elicit_labs
-from elicit_labs import ElicitLabs
+import elicit
+from elicit import Modal
 
-client = ElicitLabs()
+client = Modal()
 
 try:
     client.inference.process(
@@ -182,12 +161,12 @@ try:
         session_id="session_123",
         user_id="123e4567-e89b-12d3-a456-426614174000",
     )
-except elicit_labs.APIConnectionError as e:
+except elicit.APIConnectionError as e:
     print("The server could not be reached")
     print(e.__cause__)  # an underlying Exception, likely raised within httpx.
-except elicit_labs.RateLimitError as e:
+except elicit.RateLimitError as e:
     print("A 429 status code was received; we should back off a bit.")
-except elicit_labs.APIStatusError as e:
+except elicit.APIStatusError as e:
     print("Another non-200-range status code was received")
     print(e.status_code)
     print(e.response)
@@ -215,10 +194,10 @@ Connection errors (for example, due to a network connectivity problem), 408 Requ
 You can use the `max_retries` option to configure or disable retry settings:
 
 ```python
-from elicit_labs import ElicitLabs
+from elicit import Modal
 
 # Configure the default for all requests:
-client = ElicitLabs(
+client = Modal(
     # default is 2
     max_retries=0,
 )
@@ -242,16 +221,16 @@ By default requests time out after 1 minute. You can configure this with a `time
 which accepts a float or an [`httpx.Timeout`](https://www.python-httpx.org/advanced/timeouts/#fine-tuning-the-configuration) object:
 
 ```python
-from elicit_labs import ElicitLabs
+from elicit import Modal
 
 # Configure the default for all requests:
-client = ElicitLabs(
+client = Modal(
     # 20 seconds (default is 1 minute)
     timeout=20.0,
 )
 
 # More granular control:
-client = ElicitLabs(
+client = Modal(
     timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
 )
 
@@ -278,10 +257,10 @@ Note that requests that time out are [retried twice by default](#retries).
 
 We use the standard library [`logging`](https://docs.python.org/3/library/logging.html) module.
 
-You can enable logging by setting the environment variable `ELICIT_LABS_LOG` to `info`.
+You can enable logging by setting the environment variable `MODAL_LOG` to `info`.
 
 ```shell
-$ export ELICIT_LABS_LOG=info
+$ export MODAL_LOG=info
 ```
 
 Or to `debug` for more verbose logging.
@@ -303,9 +282,9 @@ if response.my_field is None:
 The "raw" Response object can be accessed by prefixing `.with_raw_response.` to any HTTP method call, e.g.,
 
 ```py
-from elicit_labs import ElicitLabs
+from elicit import Modal
 
-client = ElicitLabs()
+client = Modal()
 response = client.inference.with_raw_response.process(
     messages=[{
         "content": "bar",
@@ -320,9 +299,9 @@ inference = response.parse()  # get the object that `inference.process()` would 
 print(inference.session_id)
 ```
 
-These methods return an [`APIResponse`](https://github.com/stainless-sdks/elicit-labs-python/tree/main/src/elicit_labs/_response.py) object.
+These methods return an [`APIResponse`](https://github.com/ElicitLabs/modal-python-sdk/tree/main/src/elicit/_response.py) object.
 
-The async client returns an [`AsyncAPIResponse`](https://github.com/stainless-sdks/elicit-labs-python/tree/main/src/elicit_labs/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
+The async client returns an [`AsyncAPIResponse`](https://github.com/ElicitLabs/modal-python-sdk/tree/main/src/elicit/_response.py) with the same structure, the only difference being `await`able methods for reading the response content.
 
 #### `.with_streaming_response`
 
@@ -393,10 +372,10 @@ You can directly override the [httpx client](https://www.python-httpx.org/api/#c
 
 ```python
 import httpx
-from elicit_labs import ElicitLabs, DefaultHttpxClient
+from elicit import Modal, DefaultHttpxClient
 
-client = ElicitLabs(
-    # Or use the `ELICIT_LABS_BASE_URL` env var
+client = Modal(
+    # Or use the `MODAL_BASE_URL` env var
     base_url="http://my.test.server.example.com:8083",
     http_client=DefaultHttpxClient(
         proxy="http://my.test.proxy.example.com",
@@ -416,9 +395,9 @@ client.with_options(http_client=DefaultHttpxClient(...))
 By default the library closes underlying HTTP connections whenever the client is [garbage collected](https://docs.python.org/3/reference/datamodel.html#object.__del__). You can manually close the client using the `.close()` method if desired, or with a context manager that closes when exiting.
 
 ```py
-from elicit_labs import ElicitLabs
+from elicit import Modal
 
-with ElicitLabs() as client:
+with Modal() as client:
   # make requests here
   ...
 
@@ -435,7 +414,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/elicit-labs-python/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/ElicitLabs/modal-python-sdk/issues) with questions, bugs, or suggestions.
 
 ### Determining the installed version
 
@@ -444,8 +423,8 @@ If you've upgraded to the latest version but aren't seeing any new features you 
 You can determine the version that is being used at runtime with:
 
 ```py
-import elicit_labs
-print(elicit_labs.__version__)
+import elicit
+print(elicit.__version__)
 ```
 
 ## Requirements

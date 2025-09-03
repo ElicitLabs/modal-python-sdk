@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import pytest
 
-from elicit_labs import ElicitLabs, AsyncElicitLabs
+from elicit import Modal, AsyncModal
 from tests.utils import assert_matches_type
-from elicit_labs.types import InferenceProcessResponse
+from elicit.types import InferenceProcessResponse
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 
@@ -19,7 +19,7 @@ class TestInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_process(self, client: ElicitLabs) -> None:
+    def test_method_process(self, client: Modal) -> None:
         inference = client.inference.process(
             messages=[
                 {
@@ -34,7 +34,7 @@ class TestInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_raw_response_process(self, client: ElicitLabs) -> None:
+    def test_raw_response_process(self, client: Modal) -> None:
         response = client.inference.with_raw_response.process(
             messages=[
                 {
@@ -53,7 +53,7 @@ class TestInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_streaming_response_process(self, client: ElicitLabs) -> None:
+    def test_streaming_response_process(self, client: Modal) -> None:
         with client.inference.with_streaming_response.process(
             messages=[
                 {
@@ -80,7 +80,7 @@ class TestAsyncInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_process(self, async_client: AsyncElicitLabs) -> None:
+    async def test_method_process(self, async_client: AsyncModal) -> None:
         inference = await async_client.inference.process(
             messages=[
                 {
@@ -95,7 +95,7 @@ class TestAsyncInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_raw_response_process(self, async_client: AsyncElicitLabs) -> None:
+    async def test_raw_response_process(self, async_client: AsyncModal) -> None:
         response = await async_client.inference.with_raw_response.process(
             messages=[
                 {
@@ -114,7 +114,7 @@ class TestAsyncInference:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_streaming_response_process(self, async_client: AsyncElicitLabs) -> None:
+    async def test_streaming_response_process(self, async_client: AsyncModal) -> None:
         async with async_client.inference.with_streaming_response.process(
             messages=[
                 {

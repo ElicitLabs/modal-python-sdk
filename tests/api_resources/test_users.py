@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import pytest
 
-from elicit_labs import ElicitLabs, AsyncElicitLabs
+from elicit import Modal, AsyncModal
 from tests.utils import assert_matches_type
-from elicit_labs.types import UserCreateOrGetResponse
+from elicit.types import UserCreateOrGetResponse
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 
@@ -19,7 +19,7 @@ class TestUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_create_or_get(self, client: ElicitLabs) -> None:
+    def test_method_create_or_get(self, client: Modal) -> None:
         user = client.users.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -28,7 +28,7 @@ class TestUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_create_or_get_with_all_params(self, client: ElicitLabs) -> None:
+    def test_method_create_or_get_with_all_params(self, client: Modal) -> None:
         user = client.users.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -38,7 +38,7 @@ class TestUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_raw_response_create_or_get(self, client: ElicitLabs) -> None:
+    def test_raw_response_create_or_get(self, client: Modal) -> None:
         response = client.users.with_raw_response.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -51,7 +51,7 @@ class TestUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_streaming_response_create_or_get(self, client: ElicitLabs) -> None:
+    def test_streaming_response_create_or_get(self, client: Modal) -> None:
         with client.users.with_streaming_response.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -72,7 +72,7 @@ class TestAsyncUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_create_or_get(self, async_client: AsyncElicitLabs) -> None:
+    async def test_method_create_or_get(self, async_client: AsyncModal) -> None:
         user = await async_client.users.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -81,7 +81,7 @@ class TestAsyncUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_create_or_get_with_all_params(self, async_client: AsyncElicitLabs) -> None:
+    async def test_method_create_or_get_with_all_params(self, async_client: AsyncModal) -> None:
         user = await async_client.users.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -91,7 +91,7 @@ class TestAsyncUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_raw_response_create_or_get(self, async_client: AsyncElicitLabs) -> None:
+    async def test_raw_response_create_or_get(self, async_client: AsyncModal) -> None:
         response = await async_client.users.with_raw_response.create_or_get(
             email="user@example.com",
             name="John Doe",
@@ -104,7 +104,7 @@ class TestAsyncUsers:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_streaming_response_create_or_get(self, async_client: AsyncElicitLabs) -> None:
+    async def test_streaming_response_create_or_get(self, async_client: AsyncModal) -> None:
         async with async_client.users.with_streaming_response.create_or_get(
             email="user@example.com",
             name="John Doe",

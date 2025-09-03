@@ -8,15 +8,15 @@ from typing_extensions import Required, Annotated, TypedDict
 
 import pytest
 
-from elicit_labs._types import NOT_GIVEN, Base64FileInput
-from elicit_labs._utils import (
+from elicit._types import NOT_GIVEN, Base64FileInput
+from elicit._utils import (
     PropertyInfo,
     transform as _transform,
     parse_datetime,
     async_transform as _async_transform,
 )
-from elicit_labs._compat import PYDANTIC_V2
-from elicit_labs._models import BaseModel
+from elicit._compat import PYDANTIC_V2
+from elicit._models import BaseModel
 
 _T = TypeVar("_T")
 
