@@ -7,9 +7,9 @@ import pytest
 import pydantic
 from pydantic import Field
 
-from elicit_labs._utils import PropertyInfo
-from elicit_labs._compat import PYDANTIC_V2, parse_obj, model_dump, model_json
-from elicit_labs._models import BaseModel, construct_type
+from elicit._utils import PropertyInfo
+from elicit._compat import PYDANTIC_V2, parse_obj, model_dump, model_json
+from elicit._models import BaseModel, construct_type
 
 
 class BasicModel(BaseModel):

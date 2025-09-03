@@ -4,7 +4,7 @@ from urllib.parse import unquote
 
 import pytest
 
-from elicit_labs._qs import Querystring, stringify
+from elicit._qs import Querystring, stringify
 
 
 def test_empty() -> None:
