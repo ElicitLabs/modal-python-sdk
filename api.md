@@ -1,3 +1,16 @@
+# Machine
+
+Types:
+
+```python
+from elicit.types import MachineLearnResponse, MachineQueryResponse
+```
+
+Methods:
+
+- <code title="post /v1/machine/learn">client.machine.<a href="./src/elicit/resources/machine.py">learn</a>(\*\*<a href="src/elicit/types/machine_learn_params.py">params</a>) -> <a href="./src/elicit/types/machine_learn_response.py">MachineLearnResponse</a></code>
+- <code title="post /v1/machine/query">client.machine.<a href="./src/elicit/resources/machine.py">query</a>(\*\*<a href="src/elicit/types/machine_query_params.py">params</a>) -> <a href="./src/elicit/types/machine_query_response.py">MachineQueryResponse</a></code>
+
 # Users
 
 Types:
@@ -33,19 +46,6 @@ from elicit.types.data import JobRetrieveStatusResponse
 Methods:
 
 - <code title="post /v1/data/job/status">client.data.job.<a href="./src/elicit/resources/data/job.py">retrieve_status</a>(\*\*<a href="src/elicit/types/data/job_retrieve_status_params.py">params</a>) -> <a href="./src/elicit/types/data/job_retrieve_status_response.py">JobRetrieveStatusResponse</a></code>
-
-# Machine
-
-Types:
-
-```python
-from elicit.types import MachineLearnResponse, MachineQueryResponse
-```
-
-Methods:
-
-- <code title="post /v1/machine/learn">client.machine.<a href="./src/elicit/resources/machine.py">learn</a>(\*\*<a href="src/elicit/types/machine_learn_params.py">params</a>) -> <a href="./src/elicit/types/machine_learn_response.py">MachineLearnResponse</a></code>
-- <code title="post /v1/machine/query">client.machine.<a href="./src/elicit/resources/machine.py">query</a>(\*\*<a href="src/elicit/types/machine_query_params.py">params</a>) -> <a href="./src/elicit/types/machine_query_response.py">MachineQueryResponse</a></code>
 
 # APIKeys
 
