@@ -33,7 +33,6 @@ class TestMachine:
             message="I prefer to have coffee in the morning",
             user_id="123e4567-e89b-12d3-a456-426614174000",
             datetime_input="2024-01-01T10:00:00Z",
-            debug=False,
             session_id="session_123",
             speaker="user",
         )
@@ -137,7 +136,6 @@ class TestAsyncMachine:
             message="I prefer to have coffee in the morning",
             user_id="123e4567-e89b-12d3-a456-426614174000",
             datetime_input="2024-01-01T10:00:00Z",
-            debug=False,
             session_id="session_123",
             speaker="user",
         )

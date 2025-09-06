@@ -42,6 +42,12 @@ from .api_keys import (
 )
 
 __all__ = [
+    "MachineResource",
+    "AsyncMachineResource",
+    "MachineResourceWithRawResponse",
+    "AsyncMachineResourceWithRawResponse",
+    "MachineResourceWithStreamingResponse",
+    "AsyncMachineResourceWithStreamingResponse",
     "UsersResource",
     "AsyncUsersResource",
     "UsersResourceWithRawResponse",
@@ -54,12 +60,6 @@ __all__ = [
     "AsyncDataResourceWithRawResponse",
     "DataResourceWithStreamingResponse",
     "AsyncDataResourceWithStreamingResponse",
-    "MachineResource",
-    "AsyncMachineResource",
-    "MachineResourceWithRawResponse",
-    "AsyncMachineResourceWithRawResponse",
-    "MachineResourceWithStreamingResponse",
-    "AsyncMachineResourceWithStreamingResponse",
     "APIKeysResource",
     "AsyncAPIKeysResource",
     "APIKeysResourceWithRawResponse",
