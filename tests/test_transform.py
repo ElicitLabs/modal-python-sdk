@@ -8,15 +8,15 @@ from typing_extensions import Required, Annotated, TypedDict
 
 import pytest
 
-from elicit._types import NOT_GIVEN, Base64FileInput
-from elicit._utils import (
+from elicitlabs._types import Base64FileInput, omit, not_given
+from elicitlabs._utils import (
     PropertyInfo,
     transform as _transform,
     parse_datetime,
     async_transform as _async_transform,
 )
-from elicit._compat import PYDANTIC_V1
-from elicit._models import BaseModel
+from elicitlabs._compat import PYDANTIC_V1
+from elicitlabs._models import BaseModel
 
 _T = TypeVar("_T")
 
@@ -450,4 +450,11 @@ async def test_transform_skipping(use_async: bool) -> None:
 @pytest.mark.asyncio
 async def test_strips_notgiven(use_async: bool) -> None:
     assert await transform({"foo_bar": "bar"}, Foo1, use_async) == {"fooBar": "bar"}
-    assert await transform({"foo_bar": NOT_GIVEN}, Foo1, use_async) == {}
+    assert await transform({"foo_bar": not_given}, Foo1, use_async) == {}
+
+
+@parametrize
+@pytest.mark.asyncio
+async def test_strips_omit(use_async: bool) -> None:
+    assert await transform({"foo_bar": "bar"}, Foo1, use_async) == {"fooBar": "bar"}
+    assert await transform({"foo_bar": omit}, Foo1, use_async) == {}
