@@ -21,9 +21,9 @@ from ._types import (
 )
 from ._utils import is_given, get_async_library
 from ._version import __version__
-from .resources import users, health, machine, api_keys
+from .resources import users, health, machine
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
-from ._exceptions import ModalError, APIStatusError
+from ._exceptions import ElicitError, APIStatusError
 from ._base_client import (
     DEFAULT_MAX_RETRIES,
     SyncAPIClient,
@@ -31,17 +31,16 @@ from ._base_client import (
 )
 from .resources.data import data
 
-__all__ = ["Timeout", "Transport", "ProxiesTypes", "RequestOptions", "Modal", "AsyncModal", "Client", "AsyncClient"]
+__all__ = ["Timeout", "Transport", "ProxiesTypes", "RequestOptions", "Elicit", "AsyncElicit", "Client", "AsyncClient"]
 
 
-class Modal(SyncAPIClient):
+class Elicit(SyncAPIClient):
     machine: machine.MachineResource
     users: users.UsersResource
     data: data.DataResource
-    api_keys: api_keys.APIKeysResource
     health: health.HealthResource
-    with_raw_response: ModalWithRawResponse
-    with_streaming_response: ModalWithStreamedResponse
+    with_raw_response: ElicitWithRawResponse
+    with_streaming_response: ElicitWithStreamedResponse
 
     # client options
     api_key: str
@@ -69,20 +68,20 @@ class Modal(SyncAPIClient):
         # part of our public interface in the future.
         _strict_response_validation: bool = False,
     ) -> None:
-        """Construct a new synchronous Modal client instance.
+        """Construct a new synchronous Elicit client instance.
 
         This automatically infers the `api_key` argument from the `ELICIT_LABS_API_KEY` environment variable if it is not provided.
         """
         if api_key is None:
             api_key = os.environ.get("ELICIT_LABS_API_KEY")
         if api_key is None:
-            raise ModalError(
+            raise ElicitError(
                 "The api_key client option must be set either by passing api_key to the client or by setting the ELICIT_LABS_API_KEY environment variable"
             )
         self.api_key = api_key
 
         if base_url is None:
-            base_url = os.environ.get("MODAL_BASE_URL")
+            base_url = os.environ.get("ELICIT_BASE_URL")
         if base_url is None:
             base_url = f"https://api.elicitlabs.ai"
 
@@ -100,10 +99,9 @@ class Modal(SyncAPIClient):
         self.machine = machine.MachineResource(self)
         self.users = users.UsersResource(self)
         self.data = data.DataResource(self)
-        self.api_keys = api_keys.APIKeysResource(self)
         self.health = health.HealthResource(self)
-        self.with_raw_response = ModalWithRawResponse(self)
-        self.with_streaming_response = ModalWithStreamedResponse(self)
+        self.with_raw_response = ElicitWithRawResponse(self)
+        self.with_streaming_response = ElicitWithStreamedResponse(self)
 
     @property
     @override
@@ -210,14 +208,13 @@ class Modal(SyncAPIClient):
         return APIStatusError(err_msg, response=response, body=body)
 
 
-class AsyncModal(AsyncAPIClient):
+class AsyncElicit(AsyncAPIClient):
     machine: machine.AsyncMachineResource
     users: users.AsyncUsersResource
     data: data.AsyncDataResource
-    api_keys: api_keys.AsyncAPIKeysResource
     health: health.AsyncHealthResource
-    with_raw_response: AsyncModalWithRawResponse
-    with_streaming_response: AsyncModalWithStreamedResponse
+    with_raw_response: AsyncElicitWithRawResponse
+    with_streaming_response: AsyncElicitWithStreamedResponse
 
     # client options
     api_key: str
@@ -245,20 +242,20 @@ class AsyncModal(AsyncAPIClient):
         # part of our public interface in the future.
         _strict_response_validation: bool = False,
     ) -> None:
-        """Construct a new async AsyncModal client instance.
+        """Construct a new async AsyncElicit client instance.
 
         This automatically infers the `api_key` argument from the `ELICIT_LABS_API_KEY` environment variable if it is not provided.
         """
         if api_key is None:
             api_key = os.environ.get("ELICIT_LABS_API_KEY")
         if api_key is None:
-            raise ModalError(
+            raise ElicitError(
                 "The api_key client option must be set either by passing api_key to the client or by setting the ELICIT_LABS_API_KEY environment variable"
             )
         self.api_key = api_key
 
         if base_url is None:
-            base_url = os.environ.get("MODAL_BASE_URL")
+            base_url = os.environ.get("ELICIT_BASE_URL")
         if base_url is None:
             base_url = f"https://api.elicitlabs.ai"
 
@@ -276,10 +273,9 @@ class AsyncModal(AsyncAPIClient):
         self.machine = machine.AsyncMachineResource(self)
         self.users = users.AsyncUsersResource(self)
         self.data = data.AsyncDataResource(self)
-        self.api_keys = api_keys.AsyncAPIKeysResource(self)
         self.health = health.AsyncHealthResource(self)
-        self.with_raw_response = AsyncModalWithRawResponse(self)
-        self.with_streaming_response = AsyncModalWithStreamedResponse(self)
+        self.with_raw_response = AsyncElicitWithRawResponse(self)
+        self.with_streaming_response = AsyncElicitWithStreamedResponse(self)
 
     @property
     @override
@@ -386,42 +382,38 @@ class AsyncModal(AsyncAPIClient):
         return APIStatusError(err_msg, response=response, body=body)
 
 
-class ModalWithRawResponse:
-    def __init__(self, client: Modal) -> None:
+class ElicitWithRawResponse:
+    def __init__(self, client: Elicit) -> None:
         self.machine = machine.MachineResourceWithRawResponse(client.machine)
         self.users = users.UsersResourceWithRawResponse(client.users)
         self.data = data.DataResourceWithRawResponse(client.data)
-        self.api_keys = api_keys.APIKeysResourceWithRawResponse(client.api_keys)
         self.health = health.HealthResourceWithRawResponse(client.health)
 
 
-class AsyncModalWithRawResponse:
-    def __init__(self, client: AsyncModal) -> None:
+class AsyncElicitWithRawResponse:
+    def __init__(self, client: AsyncElicit) -> None:
         self.machine = machine.AsyncMachineResourceWithRawResponse(client.machine)
         self.users = users.AsyncUsersResourceWithRawResponse(client.users)
         self.data = data.AsyncDataResourceWithRawResponse(client.data)
-        self.api_keys = api_keys.AsyncAPIKeysResourceWithRawResponse(client.api_keys)
         self.health = health.AsyncHealthResourceWithRawResponse(client.health)
 
 
-class ModalWithStreamedResponse:
-    def __init__(self, client: Modal) -> None:
+class ElicitWithStreamedResponse:
+    def __init__(self, client: Elicit) -> None:
         self.machine = machine.MachineResourceWithStreamingResponse(client.machine)
         self.users = users.UsersResourceWithStreamingResponse(client.users)
         self.data = data.DataResourceWithStreamingResponse(client.data)
-        self.api_keys = api_keys.APIKeysResourceWithStreamingResponse(client.api_keys)
         self.health = health.HealthResourceWithStreamingResponse(client.health)
 
 
-class AsyncModalWithStreamedResponse:
-    def __init__(self, client: AsyncModal) -> None:
+class AsyncElicitWithStreamedResponse:
+    def __init__(self, client: AsyncElicit) -> None:
         self.machine = machine.AsyncMachineResourceWithStreamingResponse(client.machine)
         self.users = users.AsyncUsersResourceWithStreamingResponse(client.users)
         self.data = data.AsyncDataResourceWithStreamingResponse(client.data)
-        self.api_keys = api_keys.AsyncAPIKeysResourceWithStreamingResponse(client.api_keys)
         self.health = health.AsyncHealthResourceWithStreamingResponse(client.health)
 
 
-Client = Modal
+Client = Elicit
 
-AsyncClient = AsyncModal
+AsyncClient = AsyncElicit

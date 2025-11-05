@@ -8,8 +8,8 @@ from typing import Any, TypeVar, Iterator, Sequence, cast
 from datetime import date, datetime
 from typing_extensions import Literal, get_args, get_origin, assert_type
 
-from elicit._types import Omit, NoneType
-from elicit._utils import (
+from elicitlabs._types import Omit, NoneType
+from elicitlabs._utils import (
     is_dict,
     is_list,
     is_list_type,
@@ -19,8 +19,8 @@ from elicit._utils import (
     is_annotated_type,
     is_type_alias_type,
 )
-from elicit._compat import PYDANTIC_V1, field_outer_type, get_model_fields
-from elicit._models import BaseModel
+from elicitlabs._compat import PYDANTIC_V1, field_outer_type, get_model_fields
+from elicitlabs._models import BaseModel
 
 BaseModelT = TypeVar("BaseModelT", bound=BaseModel)
 

@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import pytest
 
-from elicit import Modal, AsyncModal
+from elicitlabs import Elicit, AsyncElicit
 from tests.utils import assert_matches_type
-from elicit.types import MachineLearnResponse, MachineQueryResponse
+from elicitlabs.types import MachineLearnResponse, MachineQueryResponse
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 
@@ -19,7 +19,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_learn(self, client: Modal) -> None:
+    def test_method_learn(self, client: Elicit) -> None:
         machine = client.machine.learn(
             message={
                 "content": "bar",
@@ -31,7 +31,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_learn_with_all_params(self, client: Modal) -> None:
+    def test_method_learn_with_all_params(self, client: Elicit) -> None:
         machine = client.machine.learn(
             message={
                 "content": "bar",
@@ -45,7 +45,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_raw_response_learn(self, client: Modal) -> None:
+    def test_raw_response_learn(self, client: Elicit) -> None:
         response = client.machine.with_raw_response.learn(
             message={
                 "content": "bar",
@@ -61,7 +61,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_streaming_response_learn(self, client: Modal) -> None:
+    def test_streaming_response_learn(self, client: Elicit) -> None:
         with client.machine.with_streaming_response.learn(
             message={
                 "content": "bar",
@@ -79,7 +79,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_query(self, client: Modal) -> None:
+    def test_method_query(self, client: Elicit) -> None:
         machine = client.machine.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -88,7 +88,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_query_with_all_params(self, client: Modal) -> None:
+    def test_method_query_with_all_params(self, client: Elicit) -> None:
         machine = client.machine.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -99,7 +99,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_raw_response_query(self, client: Modal) -> None:
+    def test_raw_response_query(self, client: Elicit) -> None:
         response = client.machine.with_raw_response.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -112,7 +112,7 @@ class TestMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_streaming_response_query(self, client: Modal) -> None:
+    def test_streaming_response_query(self, client: Elicit) -> None:
         with client.machine.with_streaming_response.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -133,7 +133,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_learn(self, async_client: AsyncModal) -> None:
+    async def test_method_learn(self, async_client: AsyncElicit) -> None:
         machine = await async_client.machine.learn(
             message={
                 "content": "bar",
@@ -145,7 +145,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_learn_with_all_params(self, async_client: AsyncModal) -> None:
+    async def test_method_learn_with_all_params(self, async_client: AsyncElicit) -> None:
         machine = await async_client.machine.learn(
             message={
                 "content": "bar",
@@ -159,7 +159,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_raw_response_learn(self, async_client: AsyncModal) -> None:
+    async def test_raw_response_learn(self, async_client: AsyncElicit) -> None:
         response = await async_client.machine.with_raw_response.learn(
             message={
                 "content": "bar",
@@ -175,7 +175,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_streaming_response_learn(self, async_client: AsyncModal) -> None:
+    async def test_streaming_response_learn(self, async_client: AsyncElicit) -> None:
         async with async_client.machine.with_streaming_response.learn(
             message={
                 "content": "bar",
@@ -193,7 +193,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_query(self, async_client: AsyncModal) -> None:
+    async def test_method_query(self, async_client: AsyncElicit) -> None:
         machine = await async_client.machine.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -202,7 +202,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_query_with_all_params(self, async_client: AsyncModal) -> None:
+    async def test_method_query_with_all_params(self, async_client: AsyncElicit) -> None:
         machine = await async_client.machine.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -213,7 +213,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_raw_response_query(self, async_client: AsyncModal) -> None:
+    async def test_raw_response_query(self, async_client: AsyncElicit) -> None:
         response = await async_client.machine.with_raw_response.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",
@@ -226,7 +226,7 @@ class TestAsyncMachine:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_streaming_response_query(self, async_client: AsyncModal) -> None:
+    async def test_streaming_response_query(self, async_client: AsyncElicit) -> None:
         async with async_client.machine.with_streaming_response.query(
             question="What are my preferences for morning routines?",
             user_id="123e4567-e89b-12d3-a456-426614174000",

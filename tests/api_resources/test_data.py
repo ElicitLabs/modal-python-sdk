@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import pytest
 
-from elicit import Modal, AsyncModal
+from elicitlabs import Elicit, AsyncElicit
 from tests.utils import assert_matches_type
-from elicit.types import DataIngestResponse
+from elicitlabs.types import DataIngestResponse
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 
@@ -19,7 +19,7 @@ class TestData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_ingest(self, client: Modal) -> None:
+    def test_method_ingest(self, client: Elicit) -> None:
         data = client.data.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -29,7 +29,7 @@ class TestData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_method_ingest_with_all_params(self, client: Modal) -> None:
+    def test_method_ingest_with_all_params(self, client: Elicit) -> None:
         data = client.data.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -42,7 +42,7 @@ class TestData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_raw_response_ingest(self, client: Modal) -> None:
+    def test_raw_response_ingest(self, client: Elicit) -> None:
         response = client.data.with_raw_response.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -56,7 +56,7 @@ class TestData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    def test_streaming_response_ingest(self, client: Modal) -> None:
+    def test_streaming_response_ingest(self, client: Elicit) -> None:
         with client.data.with_streaming_response.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -78,7 +78,7 @@ class TestAsyncData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_ingest(self, async_client: AsyncModal) -> None:
+    async def test_method_ingest(self, async_client: AsyncElicit) -> None:
         data = await async_client.data.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -88,7 +88,7 @@ class TestAsyncData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_method_ingest_with_all_params(self, async_client: AsyncModal) -> None:
+    async def test_method_ingest_with_all_params(self, async_client: AsyncElicit) -> None:
         data = await async_client.data.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -101,7 +101,7 @@ class TestAsyncData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_raw_response_ingest(self, async_client: AsyncModal) -> None:
+    async def test_raw_response_ingest(self, async_client: AsyncElicit) -> None:
         response = await async_client.data.with_raw_response.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",
@@ -115,7 +115,7 @@ class TestAsyncData:
 
     @pytest.mark.skip(reason="Prism tests are disabled")
     @parametrize
-    async def test_streaming_response_ingest(self, async_client: AsyncModal) -> None:
+    async def test_streaming_response_ingest(self, async_client: AsyncElicit) -> None:
         async with async_client.data.with_streaming_response.ingest(
             content_type="email",
             payload="From: john@example.com\nTo: jane@example.com\nSubject: Hello\n\nHello Jane!",

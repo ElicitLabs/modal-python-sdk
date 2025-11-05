@@ -8,6 +8,5 @@ from .machine_learn_params import MachineLearnParams as MachineLearnParams
 from .machine_query_params import MachineQueryParams as MachineQueryParams
 from .machine_learn_response import MachineLearnResponse as MachineLearnResponse
 from .machine_query_response import MachineQueryResponse as MachineQueryResponse
-from .api_key_revoke_response import APIKeyRevokeResponse as APIKeyRevokeResponse
 from .user_create_or_get_params import UserCreateOrGetParams as UserCreateOrGetParams
 from .user_create_or_get_response import UserCreateOrGetResponse as UserCreateOrGetResponse

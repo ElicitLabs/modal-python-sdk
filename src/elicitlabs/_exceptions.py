@@ -18,11 +18,11 @@ __all__ = [
 ]
 
 
-class ModalError(Exception):
+class ElicitError(Exception):
     pass
 
 
-class APIError(ModalError):
+class APIError(ElicitError):
     message: str
     request: httpx.Request
 
