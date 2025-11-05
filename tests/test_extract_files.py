@@ -4,8 +4,8 @@ from typing import Sequence
 
 import pytest
 
-from elicit._types import FileTypes
-from elicit._utils import extract_files
+from elicitlabs._types import FileTypes
+from elicitlabs._utils import extract_files
 
 
 def test_removes_files_from_input() -> None:

@@ -18,12 +18,12 @@ import pytest
 from respx import MockRouter
 from pydantic import ValidationError
 
-from elicit import Modal, AsyncModal, APIResponseValidationError
-from elicit._types import Omit
-from elicit._utils import asyncify
-from elicit._models import BaseModel, FinalRequestOptions
-from elicit._exceptions import ModalError, APIStatusError, APITimeoutError, APIResponseValidationError
-from elicit._base_client import (
+from elicitlabs import Elicit, AsyncElicit, APIResponseValidationError
+from elicitlabs._types import Omit
+from elicitlabs._utils import asyncify
+from elicitlabs._models import BaseModel, FinalRequestOptions
+from elicitlabs._exceptions import ElicitError, APIStatusError, APITimeoutError, APIResponseValidationError
+from elicitlabs._base_client import (
     DEFAULT_TIMEOUT,
     HTTPX_DEFAULT_TIMEOUT,
     BaseClient,
@@ -50,7 +50,7 @@ def _low_retry_timeout(*_args: Any, **_kwargs: Any) -> float:
     return 0.1
 
 
-def _get_open_connections(client: Modal | AsyncModal) -> int:
+def _get_open_connections(client: Elicit | AsyncElicit) -> int:
     transport = client._client._transport
     assert isinstance(transport, httpx.HTTPTransport) or isinstance(transport, httpx.AsyncHTTPTransport)
 
@@ -58,9 +58,9 @@ def _get_open_connections(client: Modal | AsyncModal) -> int:
     return len(pool._requests)
 
 
-class TestModal:
+class TestElicit:
     @pytest.mark.respx(base_url=base_url)
-    def test_raw_response(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_raw_response(self, respx_mock: MockRouter, client: Elicit) -> None:
         respx_mock.post("/foo").mock(return_value=httpx.Response(200, json={"foo": "bar"}))
 
         response = client.post("/foo", cast_to=httpx.Response)
@@ -69,7 +69,7 @@ class TestModal:
         assert response.json() == {"foo": "bar"}
 
     @pytest.mark.respx(base_url=base_url)
-    def test_raw_response_for_binary(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_raw_response_for_binary(self, respx_mock: MockRouter, client: Elicit) -> None:
         respx_mock.post("/foo").mock(
             return_value=httpx.Response(200, headers={"Content-Type": "application/binary"}, content='{"foo": "bar"}')
         )
@@ -79,7 +79,7 @@ class TestModal:
         assert isinstance(response, httpx.Response)
         assert response.json() == {"foo": "bar"}
 
-    def test_copy(self, client: Modal) -> None:
+    def test_copy(self, client: Elicit) -> None:
         copied = client.copy()
         assert id(copied) != id(client)
 
@@ -87,7 +87,7 @@ class TestModal:
         assert copied.api_key == "another My API Key"
         assert client.api_key == "My API Key"
 
-    def test_copy_default_options(self, client: Modal) -> None:
+    def test_copy_default_options(self, client: Elicit) -> None:
         # options that have a default are overridden correctly
         copied = client.copy(max_retries=7)
         assert copied.max_retries == 7
@@ -104,7 +104,7 @@ class TestModal:
         assert isinstance(client.timeout, httpx.Timeout)
 
     def test_copy_default_headers(self) -> None:
-        client = Modal(
+        client = Elicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         assert client.default_headers["X-Foo"] == "bar"
@@ -139,7 +139,7 @@ class TestModal:
         client.close()
 
     def test_copy_default_query(self) -> None:
-        client = Modal(
+        client = Elicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
         )
         assert _get_params(client)["foo"] == "bar"
@@ -176,7 +176,7 @@ class TestModal:
 
         client.close()
 
-    def test_copy_signature(self, client: Modal) -> None:
+    def test_copy_signature(self, client: Elicit) -> None:
         # ensure the same parameters that can be passed to the client are defined in the `.copy()` method
         init_signature = inspect.signature(
             # mypy doesn't like that we access the `__init__` property.
@@ -193,7 +193,7 @@ class TestModal:
             assert copy_param is not None, f"copy() signature is missing the {name} param"
 
     @pytest.mark.skipif(sys.version_info >= (3, 10), reason="fails because of a memory leak that started from 3.12")
-    def test_copy_build_request(self, client: Modal) -> None:
+    def test_copy_build_request(self, client: Elicit) -> None:
         options = FinalRequestOptions(method="get", url="/foo")
 
         def build_request(options: FinalRequestOptions) -> None:
@@ -233,10 +233,10 @@ class TestModal:
                         # to_raw_response_wrapper leaks through the @functools.wraps() decorator.
                         #
                         # removing the decorator fixes the leak for reasons we don't understand.
-                        "elicit/_legacy_response.py",
-                        "elicit/_response.py",
+                        "elicitlabs/_legacy_response.py",
+                        "elicitlabs/_response.py",
                         # pydantic.BaseModel.model_dump || pydantic.BaseModel.dict leak memory for some reason.
-                        "elicit/_compat.py",
+                        "elicitlabs/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
                     ]
@@ -255,7 +255,7 @@ class TestModal:
                     print(frame)
             raise AssertionError()
 
-    def test_request_timeout(self, client: Modal) -> None:
+    def test_request_timeout(self, client: Elicit) -> None:
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         timeout = httpx.Timeout(**request.extensions["timeout"])  # type: ignore
         assert timeout == DEFAULT_TIMEOUT
@@ -265,7 +265,7 @@ class TestModal:
         assert timeout == httpx.Timeout(100.0)
 
     def test_client_timeout_option(self) -> None:
-        client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0))
+        client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0))
 
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         timeout = httpx.Timeout(**request.extensions["timeout"])  # type: ignore
@@ -276,7 +276,7 @@ class TestModal:
     def test_http_client_timeout_option(self) -> None:
         # custom timeout given to the httpx client should be used
         with httpx.Client(timeout=None) as http_client:
-            client = Modal(
+            client = Elicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -288,7 +288,7 @@ class TestModal:
 
         # no timeout given to the httpx client should not use the httpx default
         with httpx.Client() as http_client:
-            client = Modal(
+            client = Elicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -300,7 +300,7 @@ class TestModal:
 
         # explicitly passing the default timeout currently results in it being ignored
         with httpx.Client(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
-            client = Modal(
+            client = Elicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -313,7 +313,7 @@ class TestModal:
     async def test_invalid_http_client(self) -> None:
         with pytest.raises(TypeError, match="Invalid `http_client` arg"):
             async with httpx.AsyncClient() as http_client:
-                Modal(
+                Elicit(
                     base_url=base_url,
                     api_key=api_key,
                     _strict_response_validation=True,
@@ -321,14 +321,14 @@ class TestModal:
                 )
 
     def test_default_headers_option(self) -> None:
-        test_client = Modal(
+        test_client = Elicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         request = test_client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
         assert request.headers.get("x-stainless-lang") == "python"
 
-        test_client2 = Modal(
+        test_client2 = Elicit(
             base_url=base_url,
             api_key=api_key,
             _strict_response_validation=True,
@@ -345,17 +345,17 @@ class TestModal:
         test_client2.close()
 
     def test_validate_headers(self) -> None:
-        client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("Authorization") == f"Bearer {api_key}"
 
-        with pytest.raises(ModalError):
+        with pytest.raises(ElicitError):
             with update_env(**{"ELICIT_LABS_API_KEY": Omit()}):
-                client2 = Modal(base_url=base_url, api_key=None, _strict_response_validation=True)
+                client2 = Elicit(base_url=base_url, api_key=None, _strict_response_validation=True)
             _ = client2
 
     def test_default_query_option(self) -> None:
-        client = Modal(
+        client = Elicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -374,7 +374,7 @@ class TestModal:
 
         client.close()
 
-    def test_request_extra_json(self, client: Modal) -> None:
+    def test_request_extra_json(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -408,7 +408,7 @@ class TestModal:
         data = json.loads(request.content.decode("utf-8"))
         assert data == {"foo": "bar", "baz": None}
 
-    def test_request_extra_headers(self, client: Modal) -> None:
+    def test_request_extra_headers(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -430,7 +430,7 @@ class TestModal:
         )
         assert request.headers.get("X-Bar") == "false"
 
-    def test_request_extra_query(self, client: Modal) -> None:
+    def test_request_extra_query(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -471,7 +471,7 @@ class TestModal:
         params = dict(request.url.params)
         assert params == {"foo": "2"}
 
-    def test_multipart_repeating_array(self, client: Modal) -> None:
+    def test_multipart_repeating_array(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions.construct(
                 method="post",
@@ -501,7 +501,7 @@ class TestModal:
         ]
 
     @pytest.mark.respx(base_url=base_url)
-    def test_basic_union_response(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_basic_union_response(self, respx_mock: MockRouter, client: Elicit) -> None:
         class Model1(BaseModel):
             name: str
 
@@ -515,7 +515,7 @@ class TestModal:
         assert response.foo == "bar"
 
     @pytest.mark.respx(base_url=base_url)
-    def test_union_response_different_types(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_union_response_different_types(self, respx_mock: MockRouter, client: Elicit) -> None:
         """Union of objects with the same field name using a different type"""
 
         class Model1(BaseModel):
@@ -537,7 +537,7 @@ class TestModal:
         assert response.foo == 1
 
     @pytest.mark.respx(base_url=base_url)
-    def test_non_application_json_content_type_for_json_data(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_non_application_json_content_type_for_json_data(self, respx_mock: MockRouter, client: Elicit) -> None:
         """
         Response that sets Content-Type to something other than application/json but returns json data
         """
@@ -558,7 +558,7 @@ class TestModal:
         assert response.foo == 2
 
     def test_base_url_setter(self) -> None:
-        client = Modal(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
+        client = Elicit(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
         assert client.base_url == "https://example.com/from_init/"
 
         client.base_url = "https://example.com/from_setter"  # type: ignore[assignment]
@@ -568,15 +568,15 @@ class TestModal:
         client.close()
 
     def test_base_url_env(self) -> None:
-        with update_env(MODAL_BASE_URL="http://localhost:5000/from/env"):
-            client = Modal(api_key=api_key, _strict_response_validation=True)
+        with update_env(ELICIT_BASE_URL="http://localhost:5000/from/env"):
+            client = Elicit(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
-            Modal(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Modal(
+            Elicit(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Elicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -585,7 +585,7 @@ class TestModal:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_trailing_slash(self, client: Modal) -> None:
+    def test_base_url_trailing_slash(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -599,8 +599,8 @@ class TestModal:
     @pytest.mark.parametrize(
         "client",
         [
-            Modal(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Modal(
+            Elicit(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Elicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -609,7 +609,7 @@ class TestModal:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_base_url_no_trailing_slash(self, client: Modal) -> None:
+    def test_base_url_no_trailing_slash(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -623,8 +623,8 @@ class TestModal:
     @pytest.mark.parametrize(
         "client",
         [
-            Modal(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
-            Modal(
+            Elicit(base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True),
+            Elicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -633,7 +633,7 @@ class TestModal:
         ],
         ids=["standard", "custom http client"],
     )
-    def test_absolute_request_url(self, client: Modal) -> None:
+    def test_absolute_request_url(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -645,7 +645,7 @@ class TestModal:
         client.close()
 
     def test_copied_client_does_not_close_http(self) -> None:
-        test_client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        test_client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         assert not test_client.is_closed()
 
         copied = test_client.copy()
@@ -656,7 +656,7 @@ class TestModal:
         assert not test_client.is_closed()
 
     def test_client_context_manager(self) -> None:
-        test_client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        test_client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         with test_client as c2:
             assert c2 is test_client
             assert not c2.is_closed()
@@ -664,7 +664,7 @@ class TestModal:
         assert test_client.is_closed()
 
     @pytest.mark.respx(base_url=base_url)
-    def test_client_response_validation_error(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_client_response_validation_error(self, respx_mock: MockRouter, client: Elicit) -> None:
         class Model(BaseModel):
             foo: str
 
@@ -677,7 +677,7 @@ class TestModal:
 
     def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
-            Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None))
+            Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None))
 
     @pytest.mark.respx(base_url=base_url)
     def test_received_text_for_expected_json(self, respx_mock: MockRouter) -> None:
@@ -686,12 +686,12 @@ class TestModal:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         with pytest.raises(APIResponseValidationError):
             strict_client.get("/foo", cast_to=Model)
 
-        non_strict_client = Modal(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        non_strict_client = Elicit(base_url=base_url, api_key=api_key, _strict_response_validation=False)
 
         response = non_strict_client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -722,16 +722,16 @@ class TestModal:
     )
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     def test_parse_retry_after_header(
-        self, remaining_retries: int, retry_after: str, timeout: float, client: Modal
+        self, remaining_retries: int, retry_after: str, timeout: float, client: Elicit
     ) -> None:
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
         calculated = client._calculate_retry_timeout(remaining_retries, options, headers)
         assert calculated == pytest.approx(timeout, 0.5 * 0.875)  # pyright: ignore[reportUnknownMemberType]
 
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, client: Elicit) -> None:
         respx_mock.post("/v1/machine/learn").mock(side_effect=httpx.TimeoutException("Test timeout error"))
 
         with pytest.raises(APITimeoutError):
@@ -745,9 +745,9 @@ class TestModal:
 
         assert _get_open_connections(client) == 0
 
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, client: Elicit) -> None:
         respx_mock.post("/v1/machine/learn").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
@@ -761,12 +761,12 @@ class TestModal:
         assert _get_open_connections(client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     @pytest.mark.parametrize("failure_mode", ["status", "exception"])
     def test_retries_taken(
         self,
-        client: Modal,
+        client: Elicit,
         failures_before_success: int,
         failure_mode: Literal["status", "exception"],
         respx_mock: MockRouter,
@@ -798,9 +798,11 @@ class TestModal:
         assert int(response.http_request.headers.get("x-stainless-retry-count")) == failures_before_success
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_omit_retry_count_header(self, client: Modal, failures_before_success: int, respx_mock: MockRouter) -> None:
+    def test_omit_retry_count_header(
+        self, client: Elicit, failures_before_success: int, respx_mock: MockRouter
+    ) -> None:
         client = client.with_options(max_retries=4)
 
         nb_retries = 0
@@ -826,10 +828,10 @@ class TestModal:
         assert len(response.http_request.headers.get_list("x-stainless-retry-count")) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     def test_overwrite_retry_count_header(
-        self, client: Modal, failures_before_success: int, respx_mock: MockRouter
+        self, client: Elicit, failures_before_success: int, respx_mock: MockRouter
     ) -> None:
         client = client.with_options(max_retries=4)
 
@@ -878,7 +880,7 @@ class TestModal:
         )
 
     @pytest.mark.respx(base_url=base_url)
-    def test_follow_redirects(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_follow_redirects(self, respx_mock: MockRouter, client: Elicit) -> None:
         # Test that the default follow_redirects=True allows following redirects
         respx_mock.post("/redirect").mock(
             return_value=httpx.Response(302, headers={"Location": f"{base_url}/redirected"})
@@ -890,7 +892,7 @@ class TestModal:
         assert response.json() == {"status": "ok"}
 
     @pytest.mark.respx(base_url=base_url)
-    def test_follow_redirects_disabled(self, respx_mock: MockRouter, client: Modal) -> None:
+    def test_follow_redirects_disabled(self, respx_mock: MockRouter, client: Elicit) -> None:
         # Test that follow_redirects=False prevents following redirects
         respx_mock.post("/redirect").mock(
             return_value=httpx.Response(302, headers={"Location": f"{base_url}/redirected"})
@@ -903,9 +905,9 @@ class TestModal:
         assert exc_info.value.response.headers["Location"] == f"{base_url}/redirected"
 
 
-class TestAsyncModal:
+class TestAsyncElicit:
     @pytest.mark.respx(base_url=base_url)
-    async def test_raw_response(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_raw_response(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         respx_mock.post("/foo").mock(return_value=httpx.Response(200, json={"foo": "bar"}))
 
         response = await async_client.post("/foo", cast_to=httpx.Response)
@@ -914,7 +916,7 @@ class TestAsyncModal:
         assert response.json() == {"foo": "bar"}
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_raw_response_for_binary(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_raw_response_for_binary(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         respx_mock.post("/foo").mock(
             return_value=httpx.Response(200, headers={"Content-Type": "application/binary"}, content='{"foo": "bar"}')
         )
@@ -924,7 +926,7 @@ class TestAsyncModal:
         assert isinstance(response, httpx.Response)
         assert response.json() == {"foo": "bar"}
 
-    def test_copy(self, async_client: AsyncModal) -> None:
+    def test_copy(self, async_client: AsyncElicit) -> None:
         copied = async_client.copy()
         assert id(copied) != id(async_client)
 
@@ -932,7 +934,7 @@ class TestAsyncModal:
         assert copied.api_key == "another My API Key"
         assert async_client.api_key == "My API Key"
 
-    def test_copy_default_options(self, async_client: AsyncModal) -> None:
+    def test_copy_default_options(self, async_client: AsyncElicit) -> None:
         # options that have a default are overridden correctly
         copied = async_client.copy(max_retries=7)
         assert copied.max_retries == 7
@@ -949,7 +951,7 @@ class TestAsyncModal:
         assert isinstance(async_client.timeout, httpx.Timeout)
 
     async def test_copy_default_headers(self) -> None:
-        client = AsyncModal(
+        client = AsyncElicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         assert client.default_headers["X-Foo"] == "bar"
@@ -984,7 +986,7 @@ class TestAsyncModal:
         await client.close()
 
     async def test_copy_default_query(self) -> None:
-        client = AsyncModal(
+        client = AsyncElicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"foo": "bar"}
         )
         assert _get_params(client)["foo"] == "bar"
@@ -1021,7 +1023,7 @@ class TestAsyncModal:
 
         await client.close()
 
-    def test_copy_signature(self, async_client: AsyncModal) -> None:
+    def test_copy_signature(self, async_client: AsyncElicit) -> None:
         # ensure the same parameters that can be passed to the client are defined in the `.copy()` method
         init_signature = inspect.signature(
             # mypy doesn't like that we access the `__init__` property.
@@ -1038,7 +1040,7 @@ class TestAsyncModal:
             assert copy_param is not None, f"copy() signature is missing the {name} param"
 
     @pytest.mark.skipif(sys.version_info >= (3, 10), reason="fails because of a memory leak that started from 3.12")
-    def test_copy_build_request(self, async_client: AsyncModal) -> None:
+    def test_copy_build_request(self, async_client: AsyncElicit) -> None:
         options = FinalRequestOptions(method="get", url="/foo")
 
         def build_request(options: FinalRequestOptions) -> None:
@@ -1078,10 +1080,10 @@ class TestAsyncModal:
                         # to_raw_response_wrapper leaks through the @functools.wraps() decorator.
                         #
                         # removing the decorator fixes the leak for reasons we don't understand.
-                        "elicit/_legacy_response.py",
-                        "elicit/_response.py",
+                        "elicitlabs/_legacy_response.py",
+                        "elicitlabs/_response.py",
                         # pydantic.BaseModel.model_dump || pydantic.BaseModel.dict leak memory for some reason.
-                        "elicit/_compat.py",
+                        "elicitlabs/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
                     ]
@@ -1100,7 +1102,7 @@ class TestAsyncModal:
                     print(frame)
             raise AssertionError()
 
-    async def test_request_timeout(self, async_client: AsyncModal) -> None:
+    async def test_request_timeout(self, async_client: AsyncElicit) -> None:
         request = async_client._build_request(FinalRequestOptions(method="get", url="/foo"))
         timeout = httpx.Timeout(**request.extensions["timeout"])  # type: ignore
         assert timeout == DEFAULT_TIMEOUT
@@ -1112,7 +1114,7 @@ class TestAsyncModal:
         assert timeout == httpx.Timeout(100.0)
 
     async def test_client_timeout_option(self) -> None:
-        client = AsyncModal(
+        client = AsyncElicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, timeout=httpx.Timeout(0)
         )
 
@@ -1125,7 +1127,7 @@ class TestAsyncModal:
     async def test_http_client_timeout_option(self) -> None:
         # custom timeout given to the httpx client should be used
         async with httpx.AsyncClient(timeout=None) as http_client:
-            client = AsyncModal(
+            client = AsyncElicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -1137,7 +1139,7 @@ class TestAsyncModal:
 
         # no timeout given to the httpx client should not use the httpx default
         async with httpx.AsyncClient() as http_client:
-            client = AsyncModal(
+            client = AsyncElicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -1149,7 +1151,7 @@ class TestAsyncModal:
 
         # explicitly passing the default timeout currently results in it being ignored
         async with httpx.AsyncClient(timeout=HTTPX_DEFAULT_TIMEOUT) as http_client:
-            client = AsyncModal(
+            client = AsyncElicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, http_client=http_client
             )
 
@@ -1162,7 +1164,7 @@ class TestAsyncModal:
     def test_invalid_http_client(self) -> None:
         with pytest.raises(TypeError, match="Invalid `http_client` arg"):
             with httpx.Client() as http_client:
-                AsyncModal(
+                AsyncElicit(
                     base_url=base_url,
                     api_key=api_key,
                     _strict_response_validation=True,
@@ -1170,14 +1172,14 @@ class TestAsyncModal:
                 )
 
     async def test_default_headers_option(self) -> None:
-        test_client = AsyncModal(
+        test_client = AsyncElicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_headers={"X-Foo": "bar"}
         )
         request = test_client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "bar"
         assert request.headers.get("x-stainless-lang") == "python"
 
-        test_client2 = AsyncModal(
+        test_client2 = AsyncElicit(
             base_url=base_url,
             api_key=api_key,
             _strict_response_validation=True,
@@ -1194,17 +1196,17 @@ class TestAsyncModal:
         await test_client2.close()
 
     def test_validate_headers(self) -> None:
-        client = AsyncModal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        client = AsyncElicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("Authorization") == f"Bearer {api_key}"
 
-        with pytest.raises(ModalError):
+        with pytest.raises(ElicitError):
             with update_env(**{"ELICIT_LABS_API_KEY": Omit()}):
-                client2 = AsyncModal(base_url=base_url, api_key=None, _strict_response_validation=True)
+                client2 = AsyncElicit(base_url=base_url, api_key=None, _strict_response_validation=True)
             _ = client2
 
     async def test_default_query_option(self) -> None:
-        client = AsyncModal(
+        client = AsyncElicit(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
         )
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -1223,7 +1225,7 @@ class TestAsyncModal:
 
         await client.close()
 
-    def test_request_extra_json(self, client: Modal) -> None:
+    def test_request_extra_json(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1257,7 +1259,7 @@ class TestAsyncModal:
         data = json.loads(request.content.decode("utf-8"))
         assert data == {"foo": "bar", "baz": None}
 
-    def test_request_extra_headers(self, client: Modal) -> None:
+    def test_request_extra_headers(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1279,7 +1281,7 @@ class TestAsyncModal:
         )
         assert request.headers.get("X-Bar") == "false"
 
-    def test_request_extra_query(self, client: Modal) -> None:
+    def test_request_extra_query(self, client: Elicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1320,7 +1322,7 @@ class TestAsyncModal:
         params = dict(request.url.params)
         assert params == {"foo": "2"}
 
-    def test_multipart_repeating_array(self, async_client: AsyncModal) -> None:
+    def test_multipart_repeating_array(self, async_client: AsyncElicit) -> None:
         request = async_client._build_request(
             FinalRequestOptions.construct(
                 method="post",
@@ -1350,7 +1352,7 @@ class TestAsyncModal:
         ]
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_basic_union_response(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_basic_union_response(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         class Model1(BaseModel):
             name: str
 
@@ -1364,7 +1366,7 @@ class TestAsyncModal:
         assert response.foo == "bar"
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_union_response_different_types(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_union_response_different_types(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         """Union of objects with the same field name using a different type"""
 
         class Model1(BaseModel):
@@ -1387,7 +1389,7 @@ class TestAsyncModal:
 
     @pytest.mark.respx(base_url=base_url)
     async def test_non_application_json_content_type_for_json_data(
-        self, respx_mock: MockRouter, async_client: AsyncModal
+        self, respx_mock: MockRouter, async_client: AsyncElicit
     ) -> None:
         """
         Response that sets Content-Type to something other than application/json but returns json data
@@ -1409,7 +1411,9 @@ class TestAsyncModal:
         assert response.foo == 2
 
     async def test_base_url_setter(self) -> None:
-        client = AsyncModal(base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True)
+        client = AsyncElicit(
+            base_url="https://example.com/from_init", api_key=api_key, _strict_response_validation=True
+        )
         assert client.base_url == "https://example.com/from_init/"
 
         client.base_url = "https://example.com/from_setter"  # type: ignore[assignment]
@@ -1419,17 +1423,17 @@ class TestAsyncModal:
         await client.close()
 
     async def test_base_url_env(self) -> None:
-        with update_env(MODAL_BASE_URL="http://localhost:5000/from/env"):
-            client = AsyncModal(api_key=api_key, _strict_response_validation=True)
+        with update_env(ELICIT_BASE_URL="http://localhost:5000/from/env"):
+            client = AsyncElicit(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1438,7 +1442,7 @@ class TestAsyncModal:
         ],
         ids=["standard", "custom http client"],
     )
-    async def test_base_url_trailing_slash(self, client: AsyncModal) -> None:
+    async def test_base_url_trailing_slash(self, client: AsyncElicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1452,10 +1456,10 @@ class TestAsyncModal:
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1464,7 +1468,7 @@ class TestAsyncModal:
         ],
         ids=["standard", "custom http client"],
     )
-    async def test_base_url_no_trailing_slash(self, client: AsyncModal) -> None:
+    async def test_base_url_no_trailing_slash(self, client: AsyncElicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1478,10 +1482,10 @@ class TestAsyncModal:
     @pytest.mark.parametrize(
         "client",
         [
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/", api_key=api_key, _strict_response_validation=True
             ),
-            AsyncModal(
+            AsyncElicit(
                 base_url="http://localhost:5000/custom/path/",
                 api_key=api_key,
                 _strict_response_validation=True,
@@ -1490,7 +1494,7 @@ class TestAsyncModal:
         ],
         ids=["standard", "custom http client"],
     )
-    async def test_absolute_request_url(self, client: AsyncModal) -> None:
+    async def test_absolute_request_url(self, client: AsyncElicit) -> None:
         request = client._build_request(
             FinalRequestOptions(
                 method="post",
@@ -1502,7 +1506,7 @@ class TestAsyncModal:
         await client.close()
 
     async def test_copied_client_does_not_close_http(self) -> None:
-        test_client = AsyncModal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        test_client = AsyncElicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         assert not test_client.is_closed()
 
         copied = test_client.copy()
@@ -1514,7 +1518,7 @@ class TestAsyncModal:
         assert not test_client.is_closed()
 
     async def test_client_context_manager(self) -> None:
-        test_client = AsyncModal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        test_client = AsyncElicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
         async with test_client as c2:
             assert c2 is test_client
             assert not c2.is_closed()
@@ -1522,7 +1526,7 @@ class TestAsyncModal:
         assert test_client.is_closed()
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_client_response_validation_error(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_client_response_validation_error(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         class Model(BaseModel):
             foo: str
 
@@ -1535,7 +1539,7 @@ class TestAsyncModal:
 
     async def test_client_max_retries_validation(self) -> None:
         with pytest.raises(TypeError, match=r"max_retries cannot be None"):
-            AsyncModal(
+            AsyncElicit(
                 base_url=base_url, api_key=api_key, _strict_response_validation=True, max_retries=cast(Any, None)
             )
 
@@ -1546,12 +1550,12 @@ class TestAsyncModal:
 
         respx_mock.get("/foo").mock(return_value=httpx.Response(200, text="my-custom-format"))
 
-        strict_client = AsyncModal(base_url=base_url, api_key=api_key, _strict_response_validation=True)
+        strict_client = AsyncElicit(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
         with pytest.raises(APIResponseValidationError):
             await strict_client.get("/foo", cast_to=Model)
 
-        non_strict_client = AsyncModal(base_url=base_url, api_key=api_key, _strict_response_validation=False)
+        non_strict_client = AsyncElicit(base_url=base_url, api_key=api_key, _strict_response_validation=False)
 
         response = await non_strict_client.get("/foo", cast_to=Model)
         assert isinstance(response, str)  # type: ignore[unreachable]
@@ -1582,16 +1586,16 @@ class TestAsyncModal:
     )
     @mock.patch("time.time", mock.MagicMock(return_value=1696004797))
     async def test_parse_retry_after_header(
-        self, remaining_retries: int, retry_after: str, timeout: float, async_client: AsyncModal
+        self, remaining_retries: int, retry_after: str, timeout: float, async_client: AsyncElicit
     ) -> None:
         headers = httpx.Headers({"retry-after": retry_after})
         options = FinalRequestOptions(method="get", url="/foo", max_retries=3)
         calculated = async_client._calculate_retry_timeout(remaining_retries, options, headers)
         assert calculated == pytest.approx(timeout, 0.5 * 0.875)  # pyright: ignore[reportUnknownMemberType]
 
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         respx_mock.post("/v1/machine/learn").mock(side_effect=httpx.TimeoutException("Test timeout error"))
 
         with pytest.raises(APITimeoutError):
@@ -1605,9 +1609,9 @@ class TestAsyncModal:
 
         assert _get_open_connections(async_client) == 0
 
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         respx_mock.post("/v1/machine/learn").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
@@ -1621,12 +1625,12 @@ class TestAsyncModal:
         assert _get_open_connections(async_client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     @pytest.mark.parametrize("failure_mode", ["status", "exception"])
     async def test_retries_taken(
         self,
-        async_client: AsyncModal,
+        async_client: AsyncElicit,
         failures_before_success: int,
         failure_mode: Literal["status", "exception"],
         respx_mock: MockRouter,
@@ -1658,10 +1662,10 @@ class TestAsyncModal:
         assert int(response.http_request.headers.get("x-stainless-retry-count")) == failures_before_success
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     async def test_omit_retry_count_header(
-        self, async_client: AsyncModal, failures_before_success: int, respx_mock: MockRouter
+        self, async_client: AsyncElicit, failures_before_success: int, respx_mock: MockRouter
     ) -> None:
         client = async_client.with_options(max_retries=4)
 
@@ -1688,10 +1692,10 @@ class TestAsyncModal:
         assert len(response.http_request.headers.get_list("x-stainless-retry-count")) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
-    @mock.patch("elicit._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
+    @mock.patch("elicitlabs._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
     async def test_overwrite_retry_count_header(
-        self, async_client: AsyncModal, failures_before_success: int, respx_mock: MockRouter
+        self, async_client: AsyncElicit, failures_before_success: int, respx_mock: MockRouter
     ) -> None:
         client = async_client.with_options(max_retries=4)
 
@@ -1744,7 +1748,7 @@ class TestAsyncModal:
         )
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_follow_redirects(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_follow_redirects(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         # Test that the default follow_redirects=True allows following redirects
         respx_mock.post("/redirect").mock(
             return_value=httpx.Response(302, headers={"Location": f"{base_url}/redirected"})
@@ -1756,7 +1760,7 @@ class TestAsyncModal:
         assert response.json() == {"status": "ok"}
 
     @pytest.mark.respx(base_url=base_url)
-    async def test_follow_redirects_disabled(self, respx_mock: MockRouter, async_client: AsyncModal) -> None:
+    async def test_follow_redirects_disabled(self, respx_mock: MockRouter, async_client: AsyncElicit) -> None:
         # Test that follow_redirects=False prevents following redirects
         respx_mock.post("/redirect").mock(
             return_value=httpx.Response(302, headers={"Location": f"{base_url}/redirected"})
