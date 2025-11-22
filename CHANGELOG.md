@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2025-11-22)
+
+Full Changelog: [v0.5.0...v0.5.1](https://github.com/ElicitLabs/elicitlabs-python-sdk/compare/v0.5.0...v0.5.1)
+
+### Chores
+
+* add Python 3.14 classifier and testing ([628acbc](https://github.com/ElicitLabs/elicitlabs-python-sdk/commit/628acbcfa9cd4532dcab07a46d2a006da65f85ab))
+
 ## 0.5.0 (2025-11-17)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/ElicitLabs/elicitlabs-python-sdk/compare/v0.4.0...v0.5.0)
